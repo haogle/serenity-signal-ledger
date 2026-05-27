@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas: #f1ead0;
+  --color-canvas-warm: #f3d9bc;
+  --color-card: rgba(255, 252, 240, 0.55);
+  --color-card-strong: rgba(255, 252, 240, 0.85);
+  --color-ink: #15140e;
+  --color-ink-soft: #4a4636;
+  --color-ink-mute: #7a755f;
+  --color-accent: #c5f549;
+  --color-accent-deep: #a3d428;
+  --color-line: #1f3d2a;
+  --color-line-soft: rgba(31, 61, 42, 0.18);
+  --color-border: rgba(21, 20, 14, 0.12);
+
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 90% 0%,
+      var(--color-canvas-warm) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 50% 50% at 0% 30%,
+      rgba(197, 245, 73, 0.18) 0%,
+      transparent 60%
+    ),
+    var(--color-canvas);
+  background-attachment: fixed;
+}
+
+/* faint grid texture */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(21, 20, 14, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(21, 20, 14, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  z-index: 0;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.scroll-fade {
+  mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - 32px),
+    transparent 100%
+  );
+}
+
+/* Tabular numerals everywhere we show numbers */
+.nums {
+  font-variant-numeric: tabular-nums;
 }

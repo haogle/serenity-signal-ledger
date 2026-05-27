@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Serenity Signal Ledger
 
-## Getting Started
+A clone of the "Serenity Signal Ledger" — overlays X cashtag mentions on Yahoo
+Finance daily prices. Tracks **@aleabitoreddit** (display name: *Serenity*).
 
-First, run the development server:
+## How it works
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+xreach (X scraper)  ──►  data/_raw_posts.json
+       │
+       ▼
+extract-posts.mjs   ──►  data/posts.json    (normalized + cashtags)
+       │
+       ▼
+fetch-prices.mjs    ──►  data/prices.json   (Yahoo daily closes)
+       │
+       ▼
+Next.js (Vercel)    ──►  reads both JSONs at build, renders dashboard
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The Vercel deployment serves a **frozen snapshot** of whatever JSON is in `data/`.
+To refresh, run the pipeline locally and commit; Vercel redeploys automatically.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
 
-## Learn More
+# one-time: install + auth the X scraper
+npm install -g xreach-cli
+xreach auth extract --browser chrome   # exports your X session cookies
 
-To learn more about Next.js, take a look at the following resources:
+# pull data
+npm run refresh                         # ≈ 2 minutes (Yahoo rate-limited)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# local dev
+npm run dev
+# open http://localhost:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Tracking a different X account
 
-## Deploy on Vercel
+```bash
+X_HANDLE=other_account npm run refresh
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploy to Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# from this directory, after `git init && git add -A && git commit -m "init"`:
+git remote add origin <your-github-repo>
+git push -u origin main
+```
+
+Then in the Vercel dashboard:
+
+1. **New Project** → import the repo
+2. Framework auto-detected as Next.js — no config needed
+3. **Root Directory**: `serenity-clone` if you imported the parent repo,
+   otherwise leave default
+4. Deploy
+
+Subsequent refreshes:
+
+```bash
+npm run refresh
+git commit -am "refresh $(date +%F)"
+git push        # Vercel auto-deploys
+```
+
+## Project layout
+
+```
+serenity-clone/
+├── app/
+│   ├── layout.tsx              fonts, body, global CSS variables
+│   ├── globals.css             Tailwind 4 + theme tokens
+│   └── page.tsx                server component, hands data to <Dashboard>
+├── components/
+│   ├── Dashboard.tsx           client wrapper, state for selected ticker
+│   ├── SymbolPill.tsx          left-rail symbol button
+│   ├── TimelineChart.tsx       Recharts area + mention scatter
+│   └── OpinionTape.tsx         post grid at the bottom
+├── lib/
+│   ├── types.ts                shared types
+│   └── data.ts                 imports JSON, default-symbol picker
+├── scripts/
+│   ├── fetch-posts.mjs         xreach → data/_raw_posts.json
+│   ├── extract-posts.mjs       → data/posts.json + symbol stats
+│   └── fetch-prices.mjs        Yahoo → data/prices.json (with .ST/.L fallback)
+└── data/
+    ├── _raw_posts.json         xreach raw output (not consumed by app)
+    ├── posts.json              normalized + cashtag-tagged
+    └── prices.json             daily closes per ticker
+```
+
+## Notes & limitations
+
+- **X API**: scraped via `xreach` using browser cookies. Aggressive pagination
+  triggers rate-limits (~10 pages then 500s cooldown). Defaults are tuned to
+  stay under the limit.
+- **Yahoo Finance**: `yahoo-finance2` handles the crumb cookie dance. About
+  6–10 cashtags fail to resolve (legit non-tickers like `$INC`, or thinly
+  listed names). Foreign-listed names (`$SIVE` → Stockholm, `$IQE` → London)
+  resolve via the `ALIASES` map plus exchange-suffix fallback in
+  `scripts/fetch-prices.mjs`.
+- **Static snapshot**: there is no live API in production. To make it truly
+  realtime, add Vercel Cron + replace `xreach` with a hosted X API.
+- **Not investment advice.**
