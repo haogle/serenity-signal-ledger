@@ -6,7 +6,7 @@ Finance daily prices. Tracks **@aleabitoreddit** (display name: *Serenity*).
 ## How it works
 
 ```
-xreach (X scraper)  ──►  data/_raw_posts.json
+Apify (kaitoeasyapi)─►  data/_raw_posts.json   (multi-window, dedup'd)
        │
        ▼
 extract-posts.mjs   ──►  data/posts.json    (normalized + cashtags)
@@ -26,12 +26,11 @@ To refresh, run the pipeline locally and commit; Vercel redeploys automatically.
 ```bash
 npm install
 
-# one-time: install + auth the X scraper
-npm install -g xreach-cli
-xreach auth extract --browser chrome   # exports your X session cookies
+# one-time: get an Apify API token at https://console.apify.com/account/integrations
+export APIFY_TOKEN=apify_api_xxx
 
-# pull data
-npm run refresh                         # ≈ 2 minutes (Yahoo rate-limited)
+# pull data (≈ 5-10 minutes, ~$0.001 per tweet on Apify FREE plan)
+npm run refresh
 
 # local dev
 npm run dev
@@ -96,9 +95,10 @@ serenity-clone/
 
 ## Notes & limitations
 
-- **X API**: scraped via `xreach` using browser cookies. Aggressive pagination
-  triggers rate-limits (~10 pages then 500s cooldown). Defaults are tuned to
-  stay under the limit.
+- **X data**: pulled via Apify's `kaitoeasyapi` Twitter scraper. X's advanced
+  search has an effective lookback of ~8 months, so the script walks the
+  history in 90-day windows and dedupes by tweet id. For a 2-year window of
+  one account with ~6000 tweets, total cost ≈ **$1.50 on Apify's FREE plan**.
 - **Yahoo Finance**: `yahoo-finance2` handles the crumb cookie dance. About
   6–10 cashtags fail to resolve (legit non-tickers like `$INC`, or thinly
   listed names). Foreign-listed names (`$SIVE` → Stockholm, `$IQE` → London)

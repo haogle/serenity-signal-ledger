@@ -19,7 +19,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const now = new Date();
 const period1 = new Date(now);
-period1.setMonth(period1.getMonth() - 6);
+// Cover the full corpus window (post lookback ~11 months) plus a small buffer.
+period1.setFullYear(period1.getFullYear() - 1);
+period1.setMonth(period1.getMonth() - 1);
 
 // Known mappings where a cashtag refers to a non-US listing.
 const ALIASES = {
